@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matchup Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1712;--panel:#14221b;--line:#24382d;--chalk:#eef2e6;--mute:#8fa596;--gold:#e8c547;--clay:#d65a43;--mint:#6fd39a;
+--qb:#e9785b;--rb:#6fd39a;--wr:#5fa8e8;--te:#e8a94a;--k:#b48ae0;--d:#9aa9a0}
+@media(prefers-color-scheme:light){:root{--bg:#f1f3ea;--panel:#fff;--line:#d5dccd;--chalk:#17231b;--mute:#5d7064;--gold:#9a7b00;--clay:#b8402b;--mint:#1d8a52}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--chalk);font:14px/1.4 Barlow,system-ui,sans-serif;padding:16px;max-width:1500px;margin-inline:auto}
+h1,h2,.num{font-family:'Barlow Condensed',Impact,sans-serif;margin:0}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:28px;letter-spacing:.3px}
+button,select,input[type=text]{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 11px}
+button{cursor:pointer}button:hover{border-color:var(--gold)}button.on{background:var(--gold);color:#111;border-color:var(--gold);font-weight:600}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.file{color:var(--mute);font-size:13px}
+#score{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+.sc-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sc-row .num{font-size:40px;line-height:1}
+.sc-row small{color:var(--mute);display:block;font:500 13px Barlow}
+.bar{height:10px;border-radius:5px;background:var(--clay);margin:10px 0 4px;overflow:hidden;display:flex}
+.bar i{background:var(--mint);display:block;transition:width .3s}
+#verdict{text-align:center;color:var(--mute)}
+main{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);gap:14px}
+#teams{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#teams.single{grid-template-columns:1fr}
+#teams.single .team:not(.show){display:none}
+@media(max-width:1100px){main{grid-template-columns:1fr}}
+@media(max-width:700px){#teams{grid-template-columns:1fr}}
+.team,.pool{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.th{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);gap:8px}
+.th input{background:transparent;border:0;border-bottom:1px dashed var(--line);border-radius:0;font:700 20px 'Barlow Condensed';width:55%;padding:2px}
+.th .num{font-size:26px}
+.slot{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);min-height:50px;transition:background .15s}
+.slot.bn{background:rgba(127,127,127,.06)}
+.slot.over{background:rgba(232,197,71,.18)}
+.slot.bad{background:rgba(214,90,67,.28)}
+.sl{font:700 15px 'Barlow Condensed';color:var(--mute)}
+.bnh{padding:6px 10px;color:var(--mute);font:600 13px Barlow;border-bottom:1px solid var(--line)}
+.empty{color:var(--mute);font-style:italic}
+.pl{cursor:grab;display:flex;flex-direction:column;min-width:0}
+.pl:active{cursor:grabbing}
+.pn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm{color:var(--mute);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pts{display:flex;align-items:center;gap:8px}
+.pts b{font:700 20px 'Barlow Condensed';min-width:42px;text-align:right}
+.x{padding:0 7px;line-height:22px;border-radius:50%;color:var(--mute)}
+.x:hover{color:var(--clay);border-color:var(--clay)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:0 6px;border-radius:3px;margin-left:5px;color:#111;vertical-align:1px}
+.QB{--c:var(--qb)}.RB{--c:var(--rb)}.WR{--c:var(--wr)}.TE{--c:var(--te)}.K{--c:var(--k)}.DST{--c:var(--d)}
+.pb{display:inline-block;min-width:26px;text-align:center;font-size:11px;font-weight:700;border-radius:3px;padding:1px 4px;background:var(--c);color:#111;margin-right:6px}
+.warn{color:var(--clay)}
+.pool{max-height:calc(100vh - 150px);display:flex;flex-direction:column;position:sticky;top:10px}
+.pool .ctl{padding:10px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.pool .ctl input{width:100%}
+.pills{display:flex;gap:5px;flex-wrap:wrap}.pills button{padding:3px 9px;font-size:13px}
+#poolList{overflow:auto;flex:1}
+.gh{position:sticky;top:0;background:var(--bg);padding:4px 10px;font:700 15px 'Barlow Condensed';border-bottom:1px solid var(--line);color:var(--c)}
+.pr{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line);align-items:center}
+.pr.taken{opacity:.4}
+.pr .add{padding:2px 8px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--clay);color:#fff;padding:8px 16px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
+.toast.show{opacity:1}
+.hint{padding:30px 16px;text-align:center;color:var(--mute)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Matchup Board <span id="wk" class="file"></span></h1>
+  <div class="tools">
+    <label class="file">Projections CSV <input type="file" id="csv" accept=".csv"></label>
+    <button id="vSide" class="on">Side by side</button><button id="vMy">My team</button><button id="vOpp">Opponent</button>
+  </div>
+</header>
+
+<section id="score" aria-live="polite">
+  <div class="sc-row">
+    <div><span class="num" id="sMy">0.0</span><small id="nMy">My Team</small></div>
+    <div id="verdict">Load a CSV, then fill both lineups</div>
+    <div style="text-align:right"><span class="num" id="sOpp">0.0</span><small id="nOpp">Opponent</small></div>
+  </div>
+  <div class="bar"><i id="barMy" style="width:50%"></i></div>
+</section>
+
+<main>
+  <div id="teams"></div>
+  <aside class="pool">
+    <div class="ctl">
+      <input type="text" id="q" placeholder="Search name or team">
+      <div class="pills" id="pills"></div>
+      <div class="pills"><span class="file">Add to:</span><button id="tgMy" class="on">My team</button><button id="tgOpp">Opponent</button><button id="hideT" title="Hide players already on a roster">Hide rostered</button></div>
+    </div>
+    <div id="poolList" data-drop="pool"><div class="hint">Choose your projections CSV (nfl_projections_week_N.csv) above. It is saved in this browser, so you only need to load it once per week.</div></div>
+  </aside>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const SLOTS=[{l:'QB',ok:['QB']},{l:'RB',ok:['RB']},{l:'RB',ok:['RB']},{l:'WR',ok:['WR']},{l:'WR',ok:['WR']},{l:'TE',ok:['TE']},
+ {l:'FLEX',ok:['RB','WR','TE']},{l:'K',ok:['K']},{l:'D/ST',ok:['D/ST']}];
+const NBN=6, NS=SLOTS.length, TOTAL=NS+NBN;
+const KEY='matchupBoard.v1', POSES=['QB','RB','WR','TE','K','D/ST'];
+const cls=p=>p==='D/ST'?'DST':p;
+const blank=()=>({name:'',slots:Array(TOTAL).fill(null)});
+let S={teams:{my:{...blank(),name:'My Team'},opp:{...blank(),name:'Opponent'}},view:'side',target:'my',pool:[],week:'',hide:false};
+let filter='ALL',query='',drag=null;
+const $=id=>document.getElementById(id);
+
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.teams)S={...S,...r}}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Could not save: browser storage is full or blocked')}}
+const byId=()=>Object.fromEntries(S.pool.map(p=>[p.id,p]));
+const rostered=()=>{const m={};for(const t of['my','opp'])S.teams[t].slots.forEach(id=>{if(id)m[id]=t});return m};
+const ok=(slot,p)=>slot>=NS||SLOTS[slot].ok.includes(p.pos);
+const proj=(t,from,to)=>{const P=byId();return S.teams[t].slots.slice(from,to).reduce((a,id)=>a+(id&&P[id]?P[id].pts:0),0)};
+
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2200)}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- CSV ---------- */
+function parseCSV(text){const rows=[];let r=[],f='',q=false;
+ for(let i=0;i<text.length;i++){const c=text[i];
+  if(q){if(c=='"'){if(text[i+1]=='"'){f+='"';i++}else q=false}else f+=c}
+  else if(c=='"')q=true;else if(c==','){r.push(f);f=''}
+  else if(c=='\n'||c=='\r'){if(c=='\r'&&text[i+1]=='\n')i++;r.push(f);f='';if(r.length>1||r[0]!=='')rows.push(r);r=[]}
+  else f+=c}
+ if(f!==''||r.length){r.push(f);rows.push(r)}
+ const h=rows.shift().map(x=>x.trim());return rows.map(a=>Object.fromEntries(h.map((k,i)=>[k,(a[i]??'').trim()])))}
+function ingest(text,fname){
+ const rows=parseCSV(text),seen=new Set();
+ S.pool=rows.map(r=>{let pos=(r.Position||'').toUpperCase();if(pos==='DST'||pos==='DEF')pos='D/ST';return{
+   id:r['Player ID']||`${r.Player}|${r.Team}`,name:r.Player,pos,team:r.Team,opp:r.Opponent,spread:r.Spread,total:r.Total,
+   pts:parseFloat(r['Projected Points'])||0,note:r['Status / Notes']||'',depth:r.Depth||'',wx:r.Weather||''}})
+  .filter(p=>p.name&&POSES.includes(p.pos)&&!seen.has(p.id)&&seen.add(p.id));
+ const m=(fname||'').match(/week_(\d+)/);S.week=m?m[1]:S.week;
+ const ids=new Set(S.pool.map(p=>p.id));   // drop roster entries that no longer exist in the new file
+ for(const t of['my','opp'])S.teams[t].slots=S.teams[t].slots.map(id=>ids.has(id)?id:null);
+ save();render();toast(`Loaded ${S.pool.length} players`)}
+
+/* ---------- roster ops ---------- */
+function place(team,slot,id,fromTeam,fromSlot){
+ const P=byId(),p=P[id],T=S.teams[team].slots;
+ if(!ok(slot,p)){toast(`${p.pos} can't play ${SLOTS[slot]?.l||'there'}`);return false}
+ const taken=rostered();
+ if(taken[id]&&!(fromTeam)&&taken[id]!==team){toast(`${p.name} is already on the ${taken[id]==='my'?'My Team':'Opponent'} roster`);return false}
+ const occ=T[slot];
+ if(fromTeam!==undefined&&fromSlot!==undefined){            // moving a rostered player
+  if(fromTeam!==team&&occ){toast('Swapping across teams is not allowed');return false}
+  if(fromTeam!==team){S.teams[fromTeam].slots[fromSlot]=null;T[slot]=id}
+  else{ if(occ&&!ok(fromSlot,P[occ])){toast(`${P[occ].name} can't move to ${SLOTS[fromSlot]?.l}`);return false}
+        T[fromSlot]=occ||null;T[slot]=id}
+ }else T[slot]=id;                                          // from pool; any occupant returns to the pool
+ save();render();return true}
+function quickAdd(id){
+ const P=byId()[id],t=S.target,T=S.teams[t].slots,taken=rostered();
+ if(taken[id]){toast(`${P.name} is already rostered`);return}
+ let s=SLOTS.findIndex((x,i)=>!T[i]&&x.ok.includes(P.pos));
+ if(s<0){const b=T.slice(NS).findIndex(x=>!x);s=b<0?-1:NS+b}
+ if(s<0){toast('No open slot: remove a player first');return}
+ place(t,s,id)}
+function remove(team,slot){S.teams[team].slots[slot]=null;save();render()}
+
+/* ---------- render ---------- */
+function slotHTML(team,i){
+ const P=byId(),id=S.teams[team].slots[i],p=id&&P[id],lab=i<NS?SLOTS[i].l:'BN';
+ let inner='<span class="empty">Empty</span>',right='';
+ if(p){const bad=p.pts===0&&/OUT|IR|BYE|INACTIVE|PUP/i.test(p.note);
+  inner=`<div class="pl ${cls(p.pos)}" draggable="true" data-id="${esc(id)}" data-team="${team}" data-slot="${i}">
+   <span class="pn"><span class="pb">${esc(p.pos)}</span>${esc(p.name)}${bad?`<span class="tag" style="background:var(--clay)">${/BYE/i.test(p.note)?'BYE':'OUT'}</span>`:''}${/QUESTIONABLE/i.test(p.note)?'<span class="tag" style="background:var(--gold)">Q</span>':''}</span>
+   <span class="pm ${bad&&i<NS?'warn':''}">${esc(p.team)} ${p.opp?'vs '+esc(p.opp):''} ${p.spread!==''?'(' + (p.spread>0?'+':'') + esc(p.spread)+')':''} ${p.total?'O/U '+esc(p.total):''} ${esc(p.note)}</span></div>`;
+  right=`<span class="pts"><b>${p.pts.toFixed(1)}</b><button class="x" data-rm="${team}:${i}" aria-label="Remove ${esc(p.name)}">&times;</button></span>`}
+ else if(id)right=`<button class="x" data-rm="${team}:${i}" aria-label="Remove stale entry">&times;</button>`;
+ return `${i===NS?`<div class="bnh">Bench</div>`:''}<div class="slot ${i>=NS?'bn':''}" data-drop="${team}:${i}"><span class="sl">${lab}</span><div>${inner}</div>${right}</div>`}
+function render(){
+ $('wk').textContent=S.week?`Week ${S.week}`:'';
+ $('teams').innerHTML=['my','opp'].map(t=>`<section class="team ${S.view===t?'show':''}">
+  <div class="th"><input value="${esc(S.teams[t].name)}" data-name="${t}" aria-label="Team name"><span><span class="num" id="tot-${t}">${proj(t,0,NS).toFixed(1)}</span> <button data-clear="${t}">Clear</button></span></div>
+  ${Array.from({length:TOTAL},(_,i)=>slotHTML(t,i)).join('')}</section>`).join('');
+ $('teams').className=S.view==='side'?'':'single';
+ ['vSide','vMy','vOpp'].forEach(b=>$(b).classList.toggle('on',b==={side:'vSide',my:'vMy',opp:'vOpp'}[S.view]));
+ $('tgMy').classList.toggle('on',S.target==='my');$('tgOpp').classList.toggle('on',S.target==='opp');$('hideT').classList.toggle('on',S.hide);
+ score();pool()}
+function score(){
+ const a=proj('my',0,NS),b=proj('opp',0,NS),n1=S.teams.my.name||'My Team',n2=S.teams.opp.name||'Opponent';
+ $('sMy').textContent=a.toFixed(1);$('sOpp').textContent=b.toFixed(1);$('nMy').textContent=n1;$('nOpp').textContent=n2;
+ $('barMy').style.width=(a+b>0?a/(a+b)*100:50)+'%';
+ const d=a-b;$('verdict').textContent=!S.pool.length?'Load a CSV, then fill both lineups':Math.abs(d)<.05?'Dead even':`${d>0?n1:n2} projected to win by ${Math.abs(d).toFixed(1)}`}
+function pool(){
+ const L=$('poolList');if(!S.pool.length)return;
+ const taken=rostered(),q=query.toLowerCase();$('pills').innerHTML=['ALL',...POSES].map(p=>`<button data-f="${p}" class="${filter===p?'on':''}">${p}</button>`).join('');
+ const list=S.pool.filter(p=>(filter==='ALL'||p.pos===filter)&&(!q||(p.name+' '+p.team).toLowerCase().includes(q))&&!(S.hide&&taken[p.id])).sort((a,b)=>b.pts-a.pts);
+ let html='',cur='';
+ for(const pos of POSES)for(const p of list.filter(x=>x.pos===pos)){
+  if(filter==='ALL'&&cur!==pos){cur=pos;html+=`<div class="gh ${cls(pos)}">${pos}</div>`}
+  const t=taken[p.id];
+  html+=`<div class="pr ${t?'taken':''} ${cls(p.pos)}" ${t?'':'draggable="true"'} data-pid="${esc(p.id)}"><div class="pl" style="cursor:inherit"><span class="pn"><span class="pb">${esc(p.pos)}</span>${esc(p.name)}</span>
+   <span class="pm">${esc(p.team)} ${p.opp?'vs '+esc(p.opp):''} ${p.spread!==''?'('+(p.spread>0?'+':'')+esc(p.spread)+')':''} ${p.total?'O/U '+esc(p.total):''} ${p.wx&&p.pos==='K'?esc(p.wx):''} ${esc(p.note)}</span></div>
+   <span class="pts"><b>${p.pts.toFixed(1)}</b>${t?`<span class="pm">${t==='my'?'Mine':'Opp'}</span>`:`<button class="add" data-add="${esc(p.id)}" aria-label="Add ${esc(p.name)}">+</button>`}</span></div>`}
+ L.innerHTML=html||'<div class="hint">No players match.</div>'}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.rm){const[a,b]=t.dataset.rm.split(':');remove(a,+b)}
+ else if(t.dataset.add)quickAdd(t.dataset.add);
+ else if(t.dataset.f){filter=t.dataset.f;pool()}
+ else if(t.dataset.clear){if(confirm('Clear every player from this team?')){S.teams[t.dataset.clear].slots=Array(TOTAL).fill(null);save();render()}}
+ else if(t.id==='vSide'||t.id==='vMy'||t.id==='vOpp'){S.view={vSide:'side',vMy:'my',vOpp:'opp'}[t.id];save();render()}
+ else if(t.id==='tgMy'||t.id==='tgOpp'){S.target=t.id==='tgMy'?'my':'opp';save();render()}
+ else if(t.id==='hideT'){S.hide=!S.hide;save();render()}});
+document.addEventListener('input',e=>{
+ if(e.target.id==='q'){query=e.target.value;pool()}
+ if(e.target.dataset.name){S.teams[e.target.dataset.name].name=e.target.value;save();score()}});
+$('csv').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>ingest(r.result,f.name);r.readAsText(f)});
+
+document.addEventListener('dragstart',e=>{
+ const el=e.target.closest('[draggable=true]');if(!el)return;
+ drag=el.dataset.team?{id:el.dataset.id,team:el.dataset.team,slot:+el.dataset.slot}:{id:el.dataset.pid};
+ e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',drag.id)});
+document.addEventListener('dragover',e=>{
+ const z=e.target.closest('[data-drop]');if(!z||!drag)return;e.preventDefault();
+ document.querySelectorAll('.over,.bad').forEach(x=>x.classList.remove('over','bad'));
+ if(z.dataset.drop==='pool')return;
+ const[t,s]=z.dataset.drop.split(':'),p=byId()[drag.id];
+ z.classList.add(p&&ok(+s,p)?'over':'bad')});
+document.addEventListener('drop',e=>{
+ const z=e.target.closest('[data-drop]');if(!z||!drag)return;e.preventDefault();
+ document.querySelectorAll('.over,.bad').forEach(x=>x.classList.remove('over','bad'));
+ if(z.dataset.drop==='pool'){if(drag.team)remove(drag.team,drag.slot)}   // drag a player back to the pool
+ else{const[t,s]=z.dataset.drop.split(':');place(t,+s,drag.id,drag.team,drag.slot)}
+ drag=null});
+document.addEventListener('dragend',()=>{drag=null;document.querySelectorAll('.over,.bad').forEach(x=>x.classList.remove('over','bad'))});
+
+load();render();
+</script>
+</body>
+</html>
